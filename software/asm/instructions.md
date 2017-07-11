@@ -84,3 +84,26 @@
 | sw | 32 | |
 | lw | 35 | |
 | addi | 60 | |
+
+| instruction | frequency | category |
+|:---|:---:|:---|
+| bge | 1 | |
+| and | 2 | |
+| xor | 2 | |
+| sub | 2 | |
+| sltiu | 2 | |
+| srli | 2 | |
+| srai | 2 | |
+| ret | 2 | |
+| bltu | 2 | |
+| blt | 4 | |
+| j | 6 | |
+| beq | 6 | |
+| lui | 8 | |
+| li | 9 | |
+| slli | 10 | |
+| bne | 18 | |
+| add | 19 | |
+| addi | 44 | |
+| sw | 51 | |
+| lw | 74 | |
