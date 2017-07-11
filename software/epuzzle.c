@@ -1,5 +1,3 @@
-#include <stdint.h>
-
 #define ROW     3
 #define COLUMN  2
 #define FIELDS  720
@@ -15,17 +13,17 @@
 #include <stdio.h>
 #endif
 
-int8_t dy[] = {-1,  0,  1,  0};
-int8_t dx[] = { 0,  1,  0, -1};
+int dy[] = {-1,  0,  1,  0};
+int dx[] = { 0,  1,  0, -1};
 
 struct field {
-  uint8_t state[ROW][COLUMN];
-  uint8_t cmd;
-  uint16_t prev_index;
+  int state[ROW][COLUMN];
+  int cmd;
+  int prev_index;
 };
 
 struct field fields[FIELDS];
-uint16_t field_length = 0;
+int field_length = 0;
 
 struct field TARGET_FIELD = {
   .state = {1, 2, 3, 4, 5, 0},
@@ -37,10 +35,10 @@ struct field TARGET_FIELD = {
 void debug_print_state(struct field *);
 #endif
 
-static inline void set_field(uint16_t index, uint8_t state[ROW][COLUMN], uint8_t cmd, uint16_t prev_index)
+static inline void set_field(int index, int state[ROW][COLUMN], int cmd, int prev_index)
 {
-  for (uint8_t y = 0; y < ROW; y++)
-    for (uint8_t x = 0; x < COLUMN; x++)
+  for (int y = 0; y < ROW; y++)
+    for (int x = 0; x < COLUMN; x++)
       fields[index].state[y][x] = state[y][x];
   fields[index].cmd = cmd;
   fields[index].prev_index = prev_index;
@@ -55,21 +53,21 @@ static inline void set_field(uint16_t index, uint8_t state[ROW][COLUMN], uint8_t
  * If moving blank success, it returns 1.
  * Else, it returns 0.
  */ 
-static inline uint8_t move(uint16_t prev_index, uint8_t cmd)
+static inline int move(int prev_index, int cmd)
 {
-  uint8_t blank_x = 0, blank_y = 0;
-  uint16_t new_index = field_length;
+  int blank_x = 0, blank_y = 0;
+  int new_index = field_length;
 
-  for (uint8_t y = 0; y < ROW; y++) {
-    for (uint8_t x = 0; x < COLUMN; x++) {
+  for (int y = 0; y < ROW; y++) {
+    for (int x = 0; x < COLUMN; x++) {
       if (fields[prev_index].state[y][x] == 0) {
         blank_x = x;
         blank_y = y;
       }
     }
   }
-  uint8_t next_x = blank_x + dx[cmd];
-  uint8_t next_y = blank_y + dy[cmd];
+  int next_x = blank_x + dx[cmd];
+  int next_y = blank_y + dy[cmd];
 
   switch(next_x) {
     case 0:
@@ -92,10 +90,10 @@ static inline uint8_t move(uint16_t prev_index, uint8_t cmd)
   return 1;
 }
 
-static inline uint8_t is_equal(struct field *s, struct field *d)
+static inline int is_equal(struct field *s, struct field *d)
 {
-  for (uint8_t y = 0; y < ROW; y++) {
-    for (uint8_t x = 0; x < COLUMN; x++) {
+  for (int y = 0; y < ROW; y++) {
+    for (int x = 0; x < COLUMN; x++) {
       if (s->state[y][x] != d->state[y][x])
         return 0;
     }
@@ -103,9 +101,9 @@ static inline uint8_t is_equal(struct field *s, struct field *d)
   return 1;
 }
 
-static inline uint8_t is_arrived()
+static inline int is_arrived()
 {
-  for (uint16_t i = 0; i < field_length - 1; i++) {
+  for (int i = 0; i < field_length - 1; i++) {
     if (is_equal(&fields[i], &fields[field_length - 1]) == 1)
       return 1;
   }
@@ -117,8 +115,8 @@ void debug_print_state(struct field *f)
 {
   printf("DEBUG\n");
   printf("state\n");
-  for (uint8_t y = 0; y < ROW; y++) {
-    for (uint8_t x = 0; x < COLUMN; x++) {
+  for (int y = 0; y < ROW; y++) {
+    for (int x = 0; x < COLUMN; x++) {
       printf("%u ", f->state[y][x]);
     }
     printf("\n");
@@ -129,22 +127,22 @@ void debug_print_state(struct field *f)
 #endif
 
 #define QUEUE_SIZE 256
-uint16_t queue[QUEUE_SIZE] = { 0 };  /* index */
-uint32_t head = 0, tail = 1;
-static inline void queue_add(uint16_t value)
+int queue[QUEUE_SIZE] = { 0 };  /* index */
+volatile int head = 0, tail = 1;
+static inline void queue_add(int value)
 {
   queue[(tail - 1) % QUEUE_SIZE] = value;
   tail++;
 }
 
-static inline uint16_t queue_pop()
+static inline int queue_pop()
 {
-  uint16_t value = queue[head % QUEUE_SIZE];
+  int value = queue[head % QUEUE_SIZE];
   head++;
   return value;
 }
 
-void output(uint16_t index, uint16_t cmd)
+void output(int index, int cmd)
 {
   switch (cmd) {
     case 0:
@@ -174,19 +172,22 @@ void output(uint16_t index, uint16_t cmd)
 
 int main()
 {
-  uint16_t current = 0;
-  uint8_t finished = 0;
-  uint8_t state[][COLUMN] = {{2, 4}, {5, 3}, {1, 0}};
+  int current = 0;
+  volatile int finished = 0;
+  int state[][COLUMN] = {{2, 4}, {5, 3}, {1, 0}};
   set_field(0, state, -1, 0);
   queue[0] = 0;
 
-  while ((head < tail) && !finished) {
+loop:
+  if (head > tail) goto loop_end;
+  if (finished) goto loop_end;
+  if (head == tail) goto loop_end;
 #ifdef DEBUG
     printf("head: %d tail: %d\n", head, tail);
     printf("field_length: %d\n", field_length);
 #endif
     current = queue_pop();
-    for (uint8_t i = 0; i < 4; i++) {
+    for (int i = 0; i < 4; i++) {
       if (move(current, i) == 1) {
         if (is_arrived()) {
           field_length--;   // overwrite
@@ -199,28 +200,29 @@ int main()
         queue_add(field_length - 1);
       }
     }
-  }
+  goto loop;
+loop_end:
 #ifdef DEBUG
   printf("head: %d tail: %d\n", head, tail);
 #endif
 
   if (finished) {
-    uint16_t log[256] = { 0 };  /* index */
-    uint16_t count = 0;
+    int log[256] = { 0 };  /* index */
+    int count = 0;
 
 #ifdef DEBUG
     printf("==========\n");
     debug_print_state(&fields[0]);
 #endif
 
-    for (uint16_t index = field_length - 1; index != 0; index = fields[index].prev_index) {
+    for (int index = field_length - 1; index != 0; index = fields[index].prev_index) {
 #ifdef DEBUG
       debug_print_state(&fields[index]);
 #endif
       log[count++] = fields[index].cmd;
     }
 
-    for (uint16_t i = 0; i < count; i++) {
+    for (int i = 0; i < count; i++) {
       output(i, log[count - i - 1]);
 #ifdef DEBUG
       printf("Log: %2u -> %u\n", i, log[count - i - 1]);
