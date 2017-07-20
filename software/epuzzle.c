@@ -1,5 +1,5 @@
 #define ROW     3
-#define COLUMN  2
+#define COLUMN  3
 #define FIELDS  720
 
 // #define DEBUG
@@ -28,7 +28,7 @@ int field_length = 0;
 int log_cmd[256] = { 0 };  /* index */
 
 struct field TARGET_FIELD = {
-  .state = {1, 2, 3, 4, 5, 0},
+  .state = {1, 2, 3, 4, 5, 7, 8, 0},
   .cmd = 255,
   .prev_index = 0,
 };
@@ -88,7 +88,7 @@ void output(int index, int cmd)
 */
 int current = 0;
 int finished = 0;
-int init_state[][COLUMN] = {{2, 4}, {5, 3}, {1, 0}};
+int init_state[][COLUMN] = {{1, 2, 0}, {4, 5, 3}, {7, 8, 6}};
 int blank_x, blank_y;
 int ret_val = 0;
 int arg0, arg1, arg2, arg3, arg4;
@@ -132,6 +132,7 @@ move:
   switch(blank_x + dx[arg2]) {
     case 0:
     case 1:
+    case 2:
       break;
     default:
       ret_val = 0;
